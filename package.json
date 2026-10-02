@@ -1,0 +1,33 @@
+{
+  "name": "libr-pdf",
+  "version": "0.1.0",
+  "description": "Zero-dependency PDF parsing and layout-preserving editing engine written in pure Node.js",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "bin": {
+    "libr-pdf": "bin/libr-pdf.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "try": "node bin/try.js",
+    "fuzz": "node test/tools/fuzz.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "devDependencies": {},
+  "files": [
+    "src",
+    "bin",
+    "README.md"
+  ],
+  "types": "src/index.d.ts"
+}
