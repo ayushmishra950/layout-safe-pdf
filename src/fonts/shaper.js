@@ -197,12 +197,12 @@ export class Shaper {
     else this.#legacyKern(buf);
 
     return buf.map((g) => ({
-      gid: g.gid, cluster: g.cluster, xAdvance: g.xAdvance, yAdvance: g.yAdvance, xOffset: g.xOffset, yOffset: g.yOffset,
+      gid: g.gid, cluster: g.cluster, text: g.text, xAdvance: g.xAdvance, yAdvance: g.yAdvance, xOffset: g.xOffset, yOffset: g.yOffset,
     }));
   }
 
   #entry(cp, cluster, cat) {
-    return { gid: this.#glyph(cp), cp, cat, cluster, mask: F.GLOBAL };
+    return { gid: this.#glyph(cp), cp, cat, cluster, mask: F.GLOBAL, text: String.fromCodePoint(cp) };
   }
 
   /** Base consonant, reph and feature masks for one syllable (logical order kept). */

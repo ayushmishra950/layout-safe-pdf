@@ -1,0 +1,79 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<</Type /Catalog /Pages 2 0 R /AcroForm <</Fields [6 0 R 7 0 R 8 0 R 11 0 R 14 0 R 15 0 R] /DR <</Font <</Helv 5 0 R>>>> /DA (/Helv 11 Tf 0 g)>>>>
+endobj
+2 0 obj
+<</Type /Pages /Kids [3 0 R] /Count 1>>
+endobj
+3 0 obj
+<</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources <</Font <</F1 5 0 R>>>> /Contents 4 0 R /Annots [6 0 R 7 0 R 8 0 R 12 0 R 13 0 R 14 0 R 15 0 R]>>
+endobj
+4 0 obj
+<< /Length 138>>
+stream
+BT /F1 12 Tf 72 720 Td (Name:) Tj 0 -40 Td (City:) Tj 0 -40 Td (Agree:) Tj 0 -40 Td (Gender:) Tj 0 -40 Td (State:) Tj 0 -40 Td (ID:) Tj ET
+endstream
+endobj
+5 0 obj
+<</Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding>>
+endobj
+6 0 obj
+<</FT /Tx /T (name) /V (Rahul Sharma) /DA (/Helv 11 Tf 0 g) /Type /Annot /Subtype /Widget /Rect [160 712 420 732] /P 3 0 R /F 4>>
+endobj
+7 0 obj
+<</FT /Tx /T (city) /DA (/Helv 11 Tf 0 g) /MaxLen 20 /Type /Annot /Subtype /Widget /Rect [160 672 420 692] /P 3 0 R /F 4>>
+endobj
+8 0 obj
+<</FT /Btn /T (agree) /V /Off /AS /Off /Type /Annot /Subtype /Widget /Rect [160 632 174 646] /P 3 0 R /F 4 /AP <</N <</Yes 9 0 R /Off 10 0 R>>>>>>
+endobj
+9 0 obj
+<</Type /XObject /Subtype /Form /BBox [0 0 14 14] /Length 18>>
+stream
+0 g 2 2 10 10 re f
+endstream
+endobj
+10 0 obj
+<</Type /XObject /Subtype /Form /BBox [0 0 14 14] /Length 0>>
+stream
+
+endstream
+endobj
+11 0 obj
+<</FT /Btn /T (gender) /Ff 49152 /V /Off /Kids [12 0 R 13 0 R]>>
+endobj
+12 0 obj
+<</Parent 11 0 R /AS /Off /Type /Annot /Subtype /Widget /Rect [160 592 174 606] /P 3 0 R /F 4 /AP <</N <</Male 9 0 R /Off 10 0 R>>>>>>
+endobj
+13 0 obj
+<</Parent 11 0 R /AS /Off /Type /Annot /Subtype /Widget /Rect [220 592 234 606] /P 3 0 R /F 4 /AP <</N <</Female 9 0 R /Off 10 0 R>>>>>>
+endobj
+14 0 obj
+<</FT /Ch /T (state) /Ff 131072 /Opt [(Rajasthan) (Gujarat) (Delhi)] /V (Rajasthan) /DA (/Helv 11 Tf 0 g) /Type /Annot /Subtype /Widget /Rect [160 552 300 572] /P 3 0 R /F 4>>
+endobj
+15 0 obj
+<</FT /Tx /T (id) /Ff 1 /V (A-100) /DA (/Helv 11 Tf 0 g) /Type /Annot /Subtype /Widget /Rect [160 512 300 532] /P 3 0 R /F 4>>
+endobj
+xref
+0 16
+0000000000 65535 f 
+0000000015 00000 n 
+0000000177 00000 n 
+0000000232 00000 n 
+0000000408 00000 n 
+0000000596 00000 n 
+0000000691 00000 n 
+0000000836 00000 n 
+0000000974 00000 n 
+0000001136 00000 n 
+0000001250 00000 n 
+0000001346 00000 n 
+0000001427 00000 n 
+0000001578 00000 n 
+0000001731 00000 n 
+0000001923 00000 n 
+trailer
+<</Size 16 /Root 1 0 R>>
+startxref
+2066
+%%EOF

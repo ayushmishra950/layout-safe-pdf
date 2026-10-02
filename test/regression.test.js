@@ -212,3 +212,17 @@ test('signed documents are detected and editing them warns', () => {
   const r = new TextEditor(doc).replace({ search: 'Hello', replace: 'Hi' });
   assert.match(r.warnings[0], /digitally signed/);
 });
+
+test('editPdf: one-call API returns the edited PDF and a per-edit report', async () => {
+  const { editPdf } = await import('../src/index.js');
+  const { pdf, report } = await editPdf(FIXTURES + 'chrome-invoice.pdf', [
+    { search: 'Jaipur', replace: 'Udaipur' },
+    { search: 'not present anywhere', replace: 'x' },
+  ], { includeText: true });
+  assert.ok(Buffer.isBuffer(pdf));
+  assert.equal(report.replaced, 1);
+  assert.equal(report.ok, false);
+  assert.equal(report.edits[1].notFound, true);
+  assert.match(report.text, /Udaipur, Rajasthan/);
+  await assert.rejects(editPdf(Buffer.from('nope'), []), /Not a PDF/);
+});

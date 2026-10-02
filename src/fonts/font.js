@@ -4,6 +4,7 @@ import { PDFDict, PDFName, PDFRef, PDFStream, num } from '../core/objects.js';
 import { CMap, parseCMap, predefinedCMap } from './cmap.js';
 import { ENCODINGS, StandardEncoding, glyphNameToUnicode, symbolUnicode } from './encodings.js';
 import { standardFontName, standardWidth } from './standard14.js';
+import { isKrutiFont } from './legacy.js';
 
 /**
  * @typedef {{ code:number, len:number, unicode:string, width:number, isSpace:boolean }} Glyph
@@ -27,6 +28,8 @@ export class PDFFont {
     this.isSubset = /^[A-Z]{6}\+/.test(this.baseFont);
     this.isType0 = this.subtype === 'Type0';
     this.isType3 = this.subtype === 'Type3';
+    /** Legacy non-Unicode Hindi layout (e.g. 'kruti'), or null. */
+    this.legacy = isKrutiFont(this.baseFont) ? 'kruti' : null;
     this.warnings = [];
 
     // ToUnicode

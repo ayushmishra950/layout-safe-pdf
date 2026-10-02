@@ -20,6 +20,23 @@ console.log(extractText(doc, 0));
 doc.encrypt({ userPassword: 'open', ownerPassword: 'owner', permissions: { copy: false } }); // AES-256
 ```
 
+## Quickest integration: `editPdf`
+
+```js
+import { editPdf } from 'libr-pdf';
+
+const { pdf, report } = await editPdf('input.pdf', [          // path or Buffer
+  { search: 'Full Stack Developer', replace: 'Python Developer', pages: [1] },
+  { search: 'Rahul Sharma', replace: 'Priyank Dadhich' },
+], { output: 'output.pdf' });                                  // optional: also write to disk
+
+if (!report.ok) console.log(report.edits);                    // notFound / skipped reasons per edit
+```
+
+**HTTP API, callable from any language or frontend.** Start it with `node examples/server.js`, then send `POST /edit` with the JSON body `{ "pdf": "<base64>", "edits": [...], "password"?: "..." }`.
+- The response is `{ pdf: "<base64>", report }`.
+- `POST /edit?download=1` returns the PDF file itself, with the report in the `X-Edit-Report` header.
+
 ## CLI
 
 ```bash
@@ -91,7 +108,7 @@ setLimits({ maxStreamSize: 512 * 1024 * 1024 }); // defaults: 256 MB stream, nes
 
 **Servers.** The work is synchronous and CPU-bound, roughly 1 ms per page for extraction and 10 ms per page for editing. For a busy API, run it in a `worker_threads` pool, such as Piscina, so the event loop stays free. Keep the default limits for files that users upload.
 
-**Fonts on servers.** New characters and Devanagari need fonts. On Linux, install fonts (for example `fonts-noto-core`, `fonts-liberation`) or pass `fonts`, `fontDirs` or `scriptFonts`.
+**Fonts on servers.** Run `node bin/libr-pdf.js doctor` on the server first. New characters and Devanagari need fonts. On Linux, install fonts (for example `fonts-noto-core`, `fonts-liberation`) or pass `fonts`, `fontDirs` or `scriptFonts`.
 
 **Signed PDFs.** `doc.isSigned` and `doc.signatures` show whether a document is signed. Editing a signed document invalidates the signature, and `replace()` warns about it.
 
@@ -118,6 +135,10 @@ setLimits({ maxStreamSize: 512 * 1024 * 1024 }); // defaults: 256 MB stream, nes
 | Paragraph re-wrapping, re-justification, extra lines only into free space | ✅ |
 | ActualText (extraction and writing) | ✅ |
 | Devanagari (Hindi, Marathi, …) shaping and editing | ✅ (needs a Devanagari OpenType font: Kohinoor, Noto Sans Devanagari, Mangal, Nirmala UI…) |
+| Hindi PDFs without ActualText (e.g. MS Word): visual-to-logical repair of ि and reph | ✅ |
+| Legacy Kruti Dev / DevLys 010 fonts: read as Unicode, edits written in the original font | ✅ (other legacy layouts such as Chanakya are not supported) |
+| Fillable form fields (text field values and appearances) | ✅ |
+| Environment check: `libr-pdf doctor` / `diagnose()` | ✅ |
 | Other Indic scripts (Bengali, Gujarati, Tamil…) | ❌ shaper is Devanagari-only for now |
 | Pulling words up into the previous line when text gets shorter | ❌ (shorter text leaves the line ragged) |
 | Vertical writing, Type3 font substitution | ❌ |

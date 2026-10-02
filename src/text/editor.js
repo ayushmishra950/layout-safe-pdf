@@ -20,7 +20,9 @@ import { PDFFont } from '../fonts/font.js';
 import { FontResolver, defaultResolver, normalizeFontName } from '../fonts/resolver.js';
 import { EmbeddedFont } from '../fonts/embedder.js';
 import { isDevanagari } from '../fonts/shaper.js';
+import { unicodeToKruti } from '../fonts/legacy.js';
 import { detectParagraph, rewrapParagraph } from './paragraph.js';
+import { replaceInFormFields } from './forms.js';
 
 /**
  * @typedef {object} ReplaceOptions
@@ -91,6 +93,22 @@ export class TextEditor {
   }
 
   /**
+   * Select & replace: replaces the one occurrence of `search` that lies inside
+   * `bbox` on `page` (the area the user selected), even if the same text
+   * appears elsewhere.
+   * @param {Omit<ReplaceOptions, 'pages'|'maxCount'> & { page: number, bbox: number[] }} options
+   *   page: 0-based page index; bbox: [x0, y0, x1, y1] in PDF user space (origin bottom-left)
+   */
+  replaceAt(options) {
+    const { page, bbox, ...rest } = options;
+    if (!Number.isInteger(page) || page < 0 || page >= this.doc.pageCount) throw new RangeError(`page ${page} does not exist`);
+    if (!Array.isArray(bbox) || bbox.length !== 4 || bbox.some((v) => !Number.isFinite(v))) {
+      throw new TypeError('bbox must be [x0, y0, x1, y1] in PDF coordinates');
+    }
+    return this.replace({ ...rest, pages: [page], maxCount: 1, formFields: false, where: { bbox } });
+  }
+
+  /**
    * Replaces text. Returns a report of what changed and what was skipped.
    * @param {ReplaceOptions} options
    */
@@ -156,6 +174,13 @@ export class TextEditor {
           jobs.push({ glyphs, newText, line, original: m.text });
           glyphs.forEach((g) => used.add(g));
         }
+      }
+      // Select & replace: only the occurrence inside the selected area counts.
+      if (options.where?.bbox) {
+        const best = pickByArea(jobs, options.where.bbox);
+        jobs.length = 0;
+        if (best) jobs.push(best);
+        else report.skipped.push({ page: pageIndex, text: String(search), reason: 'no matching text inside the selected area' });
       }
       if (!jobs.length) continue;
 
@@ -268,6 +293,29 @@ export class TextEditor {
       }
       report.warnings.push(...interpreter.warnings.map((w) => `page ${pageIndex + 1}: ${w}`));
     }
+    // Values typed into fillable form fields.
+    if (options.formFields !== false && remaining > 0 && !pages) {
+      const transform = (value) => {
+        let out = '';
+        let last = 0;
+        let count = 0;
+        for (const m of findInLine(value, search, caseSensitive)) {
+          if (remaining - count <= 0) break;
+          const core = typeof replace === 'function' ? replace(m.text) : String(replace).replace(/\$&/g, () => m.text);
+          out += value.slice(last, m.start) + core;
+          last = m.end;
+          count++;
+        }
+        return { text: out + value.slice(last), count };
+      };
+      const res = replaceInFormFields(this.doc, transform);
+      for (const c of res.changed) {
+        report.replaced++;
+        remaining--;
+        report.details.push({ page: -1, field: c.field, from: c.from, to: c.to, align: 'field', scale: 1, font: '', embeddedFont: false });
+      }
+      report.warnings.push(...res.warnings);
+    }
     if (report.replaced && this.signedWarning) report.warnings.unshift(this.signedWarning);
     report.warnings = [...new Set(report.warnings)];
     return report;
@@ -298,7 +346,24 @@ export class TextEditor {
     let useFont = font;
     let enc;
     let missing;
-    if (isDevanagari(job.newText)) {
+    let legacyDone = false;
+    if (font.legacy === 'kruti' && !/[A-Za-z]/.test(job.newText)) {
+      // Legacy Hindi font: write the replacement in the font's own (Kruti Dev) codes.
+      const kruti = unicodeToKruti(job.newText);
+      const kEnc = font.encode(kruti);
+      if (!kEnc.missing.filter((c) => !/\s/.test(c)).length) {
+        enc = { ...kEnc, actualText: job.newText };
+        missing = [];
+        legacyDone = true;
+      } else {
+        report.warnings.push(`The embedded Kruti Dev font lacks some glyphs for "${job.newText}"; it is drawn with a Unicode Devanagari font instead.`);
+      }
+    } else if (font.legacy === 'kruti') {
+      report.warnings.push(`"${job.newText}" contains Latin letters, which a Kruti Dev font cannot show; a similar Latin font is used.`);
+    }
+    if (legacyDone) {
+      // done
+    } else if (isDevanagari(job.newText)) {
       const sf = this.#complexFontFor(font, 'deva');
       if (!sf) {
         return skip('no Devanagari font with OpenType layout found (install e.g. Noto Sans Devanagari or pass options.scriptFonts.deva)');
@@ -306,6 +371,10 @@ export class TextEditor {
       useFont = sf;
       enc = sf.encode(job.newText);
       missing = enc.missing.filter((c) => !/\s/.test(c));
+    } else if (font.legacy === 'kruti') {
+      // Latin text cannot be shown by the legacy font: force a substitute.
+      enc = { glyphs: [], missing: [...job.newText].filter((c) => !/\s/.test(c)) };
+      missing = enc.missing;
     } else {
       enc = font.encode(job.newText);
       missing = enc.missing.filter((c) => !/\s/.test(c));
@@ -518,14 +587,14 @@ export class TextEditor {
     const italic = /italic|oblique/i.test(name) || !!(flags & 64);
     const pool = this.resolver.candidates().filter((c) => {
       const st = `${c.style} ${c.ps}`;
-      const cMono = /mono|courier/i.test(c.family);
-      const cSerif = /times|georgia|cambria|serif/i.test(c.family) && !/sans/i.test(c.family);
+      const cMono = /mono|courier|cousine/i.test(c.family);
+      const cSerif = /times|georgia|cambria|serif|tinos/i.test(c.family) && !/sans/i.test(c.family);
       return cMono === mono && (mono || cSerif === serif) && /bold|black|heavy/i.test(st) === bold && /italic|oblique/i.test(st) === italic;
     });
     if (!pool.length) return null;
     const ranked = this.#rankByMetrics(font, pool);
     if (ranked) return ranked.c;
-    const order = mono ? ['Courier New', 'Courier'] : serif ? ['Times New Roman', 'Times', 'Georgia'] : ['Helvetica', 'Arial', 'Helvetica Neue'];
+    const order = mono ? ['Courier New', 'Courier', 'Liberation Mono', 'DejaVu Sans Mono'] : serif ? ['Times New Roman', 'Times', 'Liberation Serif', 'Georgia', 'DejaVu Serif'] : ['Helvetica', 'Arial', 'Liberation Sans', 'Helvetica Neue', 'DejaVu Sans'];
     for (const fam of order) {
       const hit = pool.find((c) => c.family === fam);
       if (hit) return hit;
@@ -579,6 +648,13 @@ export class TextEditor {
       // Never modify a font dictionary that may be shared: copy it in place.
       fonts = resolvedFonts instanceof PDFDict ? resolvedFonts.clone() : new PDFDict();
       resources.set('Font', fonts);
+    }
+    // Reuse an existing entry for this font (from an earlier replace() call).
+    for (const [key, v] of fonts.entries()) {
+      if (v instanceof PDFRef && v.num === embedded.ref.num) {
+        source.addedFonts.set(embedded, key);
+        return key;
+      }
     }
     let i = 1;
     while (fonts.has(`LbF${i}`)) i++;
@@ -743,6 +819,16 @@ function detectAlignment(line, geo, ctx, matchAtEnd) {
   }
   if (sameEnd > 0 && sameEnd >= sameStart && matchAtEnd) return 'right';
   if (sameCenter > 0 && sameCenter > sameStart) return 'center';
+  // A single line (heading, title, date) placed on the centre or right edge of
+  // the text area / page, away from the left margin.
+  if (sameStart === 0) {
+    const [px0, , px1] = ctx.page.cropBox;
+    const area = ctx.textArea || { left: px0, right: px1 };
+    const awayFromLeft = geo.start > area.left + size * 2;
+    const tol = Math.max(1.5, size * 0.15);
+    if (awayFromLeft && (Math.abs(center - (area.left + area.right) / 2) < tol || Math.abs(center - (px0 + px1) / 2) < tol)) return 'center';
+    if (awayFromLeft && matchAtEnd && Math.abs(geo.end - area.right) < tol) return 'right';
+  }
   return 'left';
 }
 
@@ -787,6 +873,25 @@ function findInLine(text, search, caseSensitive) {
     i += search.length;
   }
   return out;
+}
+
+/**
+ * The job whose text box overlaps the selected area the most (relative to the
+ * size of the text), or null when none overlaps.
+ */
+function pickByArea(jobs, area) {
+  const [ax0, ay0, ax1, ay1] = [Math.min(area[0], area[2]), Math.min(area[1], area[3]), Math.max(area[0], area[2]), Math.max(area[1], area[3])];
+  let best = null;
+  for (const job of jobs) {
+    const [x0, y0, x1, y1] = bboxOf(job.glyphs);
+    const pad = 2; // selections are rarely pixel-exact
+    const w = Math.min(x1, ax1 + pad) - Math.max(x0, ax0 - pad);
+    const h = Math.min(y1, ay1 + pad) - Math.max(y0, ay0 - pad);
+    if (w <= 0 || h <= 0) continue;
+    const score = (w * h) / Math.max((x1 - x0) * (y1 - y0), 1e-6);
+    if (!best || score > best.score) best = { job, score };
+  }
+  return best ? best.job : null;
 }
 
 function glyphsOf(line, start, end) {

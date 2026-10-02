@@ -14,3 +14,6 @@ export { ContentInterpreter } from './content/interpreter.js';
 export { PDFFont, loadFont } from './fonts/font.js';
 export { TextEditor } from './text/editor.js';
 export { extractText, extractLines } from './text/extract.js';
+export { editPdf } from './api.js';
+export { diagnose } from './doctor.js';
+export { getFormFields, setFormFields } from './text/forms.js';

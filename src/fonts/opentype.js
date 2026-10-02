@@ -607,7 +607,7 @@ export class LayoutEngine {
             buf.splice(i, 1);
             return { next: i };
           }
-          const repl = seq.map((gid, k) => ({ ...g, gid, multiIndex: k }));
+          const repl = seq.map((gid, k) => ({ ...g, gid, multiIndex: k, text: k === 0 ? g.text : '' }));
           buf.splice(i, 1, ...repl);
           return { next: i + repl.length };
         }
@@ -638,7 +638,8 @@ export class LayoutEngine {
             first.ligComps = positions.length;
             first.substituted = true;
             first.cluster = Math.min(...positions.map((p) => buf[p].cluster));
-            first.mask = positions.reduce((m, p) => m | buf[p].mask, 0) & first.mask | first.mask;
+            // Text the ligature stands for (used for ToUnicode maps).
+            if (first.text !== undefined) first.text = positions.map((p) => buf[p].text ?? '').join('');
             // Marks between components get attached to the right component.
             let comp = 0;
             for (let p = i + 1; p <= positions[positions.length - 1]; p++) {

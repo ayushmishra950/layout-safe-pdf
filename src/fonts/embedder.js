@@ -92,6 +92,7 @@ export class EmbeddedFont {
   // ---- font-model interface used by the interpreter / editor ------------------------
 
   get subtype() { return 'Type0'; }
+  get legacy() { return null; }
   get isType3() { return false; }
   get embedded() { return true; }
   get isSubset() { return true; }
@@ -172,8 +173,10 @@ export class EmbeddedFont {
       const unicode = first ? clusterText.get(g.cluster) : '';
       if (!this.used.has(g.gid) && g.gid) {
         // Ligatures/conjuncts only get the cluster text when they alone form the cluster.
+        // The glyph's own text (ligatures carry their components) first, then the
+        // character it directly represents, then the whole cluster if it is alone.
         const direct = this.reverseCmap.get(g.gid);
-        this.used.set(g.gid, direct ?? (perCluster.get(g.cluster) === 1 ? clusterText.get(g.cluster) : ''));
+        this.used.set(g.gid, g.text || direct || (perCluster.get(g.cluster) === 1 ? clusterText.get(g.cluster) : ''));
       }
       const hm = this.ttf.advances[g.gid] || 0;
       return {

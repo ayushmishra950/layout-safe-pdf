@@ -105,7 +105,29 @@ export class ContentInterpreter {
     };
     this.sources.set(source.id, source);
     this.#run(source, [...IDENTITY], new Set());
+    this.#validateSpans();
     return this.shows;
+  }
+
+  /**
+   * An ActualText span normally covers one word or syllable. A span whose
+   * glyphs sit on different lines comes from a missing EMC (broken file):
+   * ignore it and fall back to each glyph's own text.
+   */
+  #validateSpans() {
+    const spans = new Set();
+    for (const s of this.shows) for (const g of s.glyphs) if (g.cluster) spans.add(g.cluster);
+    for (const span of spans) {
+      const gl = span.glyphs;
+      const y0 = gl[0].y, size = Math.max(gl[0].size, 1);
+      const broken = gl.some((g) => Math.abs(g.y - y0) > size * 0.6);
+      if (!broken) continue;
+      this.warnings.push('Ignored an ActualText span that spans several lines (unbalanced marked content)');
+      for (const g of gl) {
+        g.cluster = null;
+        g.unicode = g.ownUnicode;
+      }
+    }
   }
 
   #run(source, baseCtm, formStack) {
@@ -405,11 +427,12 @@ export class ContentInterpreter {
           // Fixed object shape (no spread, no later additions) keeps V8 fast on big pages.
           const pg = {
             code: g.code, len: g.len, unicode: g.unicode, width: g.width, isSpace: g.isSpace,
-            adv, x, y, ex: M[4] + M[2] * rise, ey: M[5] + M[3] * rise, size, show, elem, idx, cluster: null,
+            adv, x, y, ex: M[4] + M[2] * rise, ey: M[5] + M[3] * rise, size, show, elem, idx, cluster: null, ownUnicode: null,
           };
           if (span) {
             // Glyphs of an ActualText span form one cluster: the first carries the text.
             pg.cluster = span;
+            pg.ownUnicode = pg.unicode;
             pg.unicode = span.glyphs.length ? '' : span.text;
             span.glyphs.push(pg);
           }

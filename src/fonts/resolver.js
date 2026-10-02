@@ -151,11 +151,15 @@ export class FontResolver {
 /** Preferred system fonts per script (family names), best first. */
 const SCRIPT_FAMILIES = {
   deva: ['Noto Sans Devanagari', 'Mangal', 'Nirmala UI', 'Kohinoor Devanagari', 'Lohit Devanagari',
-    'Devanagari Sangam MN', 'ITF Devanagari', 'Adobe Devanagari', 'Noto Serif Devanagari', 'Shree Devanagari 714'],
+    'Devanagari Sangam MN', 'ITF Devanagari', 'Adobe Devanagari', 'Noto Serif Devanagari', 'Shree Devanagari 714',
+    'Mukta', 'Hind', 'Poppins', 'Tiro Devanagari Hindi', 'Gargi', 'Sarai', 'Kalimati', 'Annapurna SIL', 'Aparajita', 'Kokila', 'Utsaah'],
 };
 
 const COMMON_LATIN = ['Arial', 'Helvetica', 'Helvetica Neue', 'Times New Roman', 'Times', 'Georgia', 'Verdana',
-  'Calibri', 'Cambria', 'Tahoma', 'Trebuchet MS', 'Courier New', 'Roboto', 'Open Sans', 'Noto Sans', 'Segoe UI'];
+  'Calibri', 'Cambria', 'Tahoma', 'Trebuchet MS', 'Courier New', 'Roboto', 'Open Sans', 'Noto Sans', 'Segoe UI',
+  // Common on Linux servers (metric-compatible with Arial / Times / Courier).
+  'Liberation Sans', 'Liberation Serif', 'Liberation Mono', 'DejaVu Sans', 'DejaVu Serif', 'DejaVu Sans Mono',
+  'Noto Serif', 'Noto Sans Mono', 'FreeSans', 'FreeSerif', 'FreeMono', 'Arimo', 'Tinos', 'Cousine'];
 
 /** Candidate fonts for metric matching: script fonts plus common Latin families. */
 FontResolver.prototype.candidates = function candidates() {

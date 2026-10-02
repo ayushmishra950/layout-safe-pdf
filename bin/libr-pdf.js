@@ -3,7 +3,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
-import { PDFDocument, TextEditor, extractText, extractLines, ContentInterpreter } from '../src/index.js';
+import { PDFDocument, TextEditor, extractText, extractLines, ContentInterpreter, diagnose } from '../src/index.js';
 
 const USAGE = `libr-pdf – zero-dependency PDF text editing
 
@@ -18,6 +18,7 @@ Usage:
   libr-pdf replace <in.pdf> <out.pdf> --spec edits.json
   libr-pdf encrypt <in.pdf> <out.pdf> --user-password <pw> [--owner-password <pw>] [--no-copy] [--no-print] [--no-modify]
   libr-pdf decrypt <in.pdf> <out.pdf> --password <pw>
+  libr-pdf doctor   (checks Node.js and the fonts needed for English and Hindi edits)
 
 Common options:
   --password <pw>   password for encrypted files
@@ -154,6 +155,16 @@ async function main() {
       }
       await doc.saveAs(output, { incremental: !opts.full });
       console.log(`Saved ${output} (${total} replacement(s), ${opts.full ? 'full rewrite' : 'incremental update'})`);
+      break;
+    }
+    case 'doctor': {
+      const r = diagnose();
+      for (const c of r.checks) {
+        console.log(`${c.ok ? '✓' : '✗'} ${c.name}: ${c.detail}`);
+        if (c.fix) console.log(`    fix: ${c.fix}`);
+      }
+      console.log(r.ok ? '\nAll good: English and Hindi editing are available.' : '\nSome checks failed; see the fixes above.');
+      process.exitCode = r.ok ? 0 : 1;
       break;
     }
     case 'encrypt': {

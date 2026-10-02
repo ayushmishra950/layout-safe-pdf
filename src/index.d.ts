@@ -87,6 +87,8 @@ export interface ReplaceOptions {
   maxCount?: number;
   /** Smallest horizontal condensing allowed (default 0.5). */
   minScale?: number;
+  /** Also replace text in fillable form-field values (default true; ignored when `pages` is set). */
+  formFields?: boolean;
 }
 
 export interface ReplaceReport {
@@ -103,6 +105,8 @@ export interface ReplaceReport {
     embeddedFont: boolean;
     rewrapped?: boolean;
     lines?: number;
+    /** Set for form-field replacements (page is -1). */
+    field?: string;
   }>;
 }
 
@@ -159,3 +163,41 @@ export function parseOperations(bytes: Buffer): Array<{ op: string; operands: un
 export function rebuildContent(source: Buffer, ops: unknown[], replacements: Map<number, unknown[]>): Buffer;
 export class PDFFont {}
 export function loadFont(doc: PDFDocument, ref: unknown): PDFFont | null;
+
+// ---- one-call API ---------------------------------------------------------------------
+
+export interface Edit {
+  search: string;
+  replace: string;
+  /** Treat `search` as a regular expression. */
+  regex?: boolean;
+  ignoreCase?: boolean;
+  /** 1-based page numbers (default: all pages). */
+  pages?: number[];
+  mode?: 'reflow' | 'preserve' | 'fit';
+  align?: 'auto' | 'left' | 'right' | 'center';
+  wrap?: boolean;
+  maxCount?: number;
+}
+
+export interface EditReport {
+  /** true when every edit replaced something and nothing was skipped. */
+  ok: boolean;
+  replaced: number;
+  edits: Array<{ search: string; replace: string; replaced: number; skipped: Array<{ page: number; reason: string }>; warnings: string[]; notFound?: boolean }>;
+  warnings: string[];
+  pageCount: number;
+  text?: string;
+}
+
+export function editPdf(
+  input: string | Buffer | Uint8Array,
+  edits: Edit[],
+  options?: { password?: string; output?: string; incremental?: boolean; includeText?: boolean; editor?: EditorOptions },
+): Promise<{ pdf: Buffer; report: EditReport }>;
+
+export function diagnose(options?: { scriptFonts?: { deva?: string } }): {
+  ok: boolean;
+  checks: Array<{ name: string; ok: boolean; detail: string; fix?: string }>;
+  limits: Limits;
+};

@@ -1,3 +1,5 @@
+import { krutiToUnicode } from '../fonts/legacy.js';
+import { needsRepair, repairDevanagari } from './devanagari.js';
 // Groups positioned glyphs into text lines with virtual spaces, keeping a
 // char -> glyph mapping so matches can be traced back to content operations.
 
@@ -58,7 +60,40 @@ export function buildLines(shows, options = {}) {
   return lines.map((l) => finishLine(l, gapFactor));
 }
 
+/**
+ * Words drawn with a legacy Hindi font (Kruti Dev) hold Latin codes. Group
+ * each word's glyphs into a cluster carrying the converted Unicode text, the
+ * same way ActualText clusters work.
+ */
+function convertLegacyWords(glyphs) {
+  let run = [];
+  const flush = () => {
+    if (!run.length) return;
+    const raw = run.map((g) => g.unicode).join('');
+    const cluster = { text: krutiToUnicode(raw), glyphs: run, legacy: 'kruti' };
+    run.forEach((g, i) => {
+      g.ownUnicode = g.unicode;
+      g.cluster = cluster;
+      g.unicode = i === 0 ? cluster.text : '';
+    });
+    run = [];
+  };
+  for (const g of glyphs) {
+    const legacy = g.show.font?.legacy === 'kruti' && !g.cluster;
+    const prev = run[run.length - 1];
+    const gap = prev ? Math.hypot(g.x - prev.ex, g.y - prev.ey) : 0;
+    if (!legacy || /^\s*$/.test(g.unicode) || (prev && gap > g.size * 0.25)) {
+      flush();
+      if (legacy && !/^\s*$/.test(g.unicode)) run.push(g);
+      continue;
+    }
+    run.push(g);
+  }
+  flush();
+}
+
 function finishLine(l, gapFactor) {
+  if (l.glyphs.some((g) => g.show.font?.legacy)) convertLegacyWords(l.glyphs);
   const chars = [];
   let prev = null;
   // Furthest point reached along the line so far. Zero-width marks (Devanagari
@@ -98,6 +133,7 @@ function finishLine(l, gapFactor) {
     prev = g;
     reach = Math.max(reach, reached);
   }
+  if (needsRepair(chars)) repairDevanagari(chars);
   const first = l.glyphs[0];
   return {
     text: chars.reduce((s, c) => s + c.ch, ''),
