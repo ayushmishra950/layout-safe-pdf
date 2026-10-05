@@ -37,6 +37,40 @@ if (!report.ok) console.log(report.edits);                    // notFound / skip
 - The response is `{ pdf: "<base64>", report }`.
 - `POST /edit?download=1` returns the PDF file itself, with the report in the `X-Edit-Report` header.
 
+## Three ways to edit (for a PDF-editing website)
+
+**1. Find & Replace.** Replace every occurrence, or limit it with `pages` or `maxCount`:
+
+```js
+await editPdf(pdf, [{ search: 'Rahul Sharma', replace: 'Priyank Dadhich' }]);
+```
+
+**2. Select & Replace.** Only the occurrence the user selected changes, even if the same text appears elsewhere:
+
+```js
+await editPdf(pdf, [{ search: selectedText, replace: newText, page: 2, bbox: [x0, y0, x1, y1] }]);
+// or: new TextEditor(doc).replaceAt({ page: 1 /* 0-based */, bbox, search, replace })
+```
+
+`bbox` is in PDF points with the origin at the bottom left. With pdf.js in the browser, convert the selection rectangle like this:
+
+```js
+const [x0, y0] = viewport.convertToPdfPoint(rect.left - pageLeft, rect.bottom - pageTop);
+const [x1, y1] = viewport.convertToPdfPoint(rect.right - pageLeft, rect.top - pageTop);
+```
+
+**3. Form-based editing (fillable fields).** `getFormFields(doc)` lists every field with its name, type, value, options and read-only flag, which is what you need to build the form UI. Then fill the fields by name:
+
+```js
+await editPdf(pdf, [], { fields: { name: 'Priyank Dadhich', city: 'Udaipur', agree: true, gender: 'Male', state: 'Delhi' } });
+```
+
+- Supported field types: text (including empty fields), checkbox (`true`/`false`), radio (an option value), dropdown and list.
+- Appearances are regenerated so every viewer shows the new values.
+- Read-only fields, unknown options and values that are too long are refused. `report.fields` gives the reason for each.
+
+The HTTP example server supports all three on `POST /edit` (`edits` and `fields`). It also has `POST /fields`, which lists the form fields of an uploaded PDF.
+
 ## CLI
 
 ```bash
@@ -107,6 +141,10 @@ setLimits({ maxStreamSize: 512 * 1024 * 1024 }); // defaults: 256 MB stream, nes
 **Errors.** Errors are `PDFPasswordError` (wrong or missing password), `PDFLimitError`, `PDFSyntaxError`, or a plain `Error` such as "Not a PDF file". Damaged files are repaired automatically, and `doc.warnings` says what was fixed. Every `replace()` returns `skipped` with reasons and `warnings`, so you can show them to users.
 
 **Servers.** The work is synchronous and CPU-bound, roughly 1 ms per page for extraction and 10 ms per page for editing. For a busy API, run it in a `worker_threads` pool, such as Piscina, so the event loop stays free. Keep the default limits for files that users upload.
+
+**Memory.** The library stores nothing on disk and keeps nothing per document after a request.
+- Interned PDF names are held weakly, so a server that edits millions of PDFs stays flat. This is covered by `test/memory.test.js`: across 3,000 edits with unique names, memory stays at about 5.5 MB.
+- In one long synchronous batch, memory is released when the event loop next turns. Add `await new Promise((r) => setImmediate(r))` between files.
 
 **Fonts on servers.** Run `node bin/libr-pdf.js doctor` on the server first. New characters and Devanagari need fonts. On Linux, install fonts (for example `fonts-noto-core`, `fonts-liberation`) or pass `fonts`, `fontDirs` or `scriptFonts`.
 

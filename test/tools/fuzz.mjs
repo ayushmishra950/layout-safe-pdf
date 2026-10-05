@@ -18,12 +18,17 @@ const iterations = Number(process.argv[2] || 1000);
 const worker = path.join(work, 'case.mjs');
 fs.writeFileSync(worker, `
 import fs from 'node:fs';
-import { PDFDocument, TextEditor, extractText } from ${JSON.stringify(lib)};
+import { PDFDocument, TextEditor, extractText, getFormFields, setFormFields } from ${JSON.stringify(lib)};
 let stage = 'load';
 try {
   const doc = new PDFDocument(fs.readFileSync(process.argv[2]));
   stage = 'extract'; for (let p = 0; p < Math.min(doc.pageCount, 3); p++) extractText(doc, p);
-  stage = 'edit'; new TextEditor(doc, { useSystemFonts: false }).replace({ search: /[A-Za-z]{3,}/, replace: 'Changed text', maxCount: 2 });
+  stage = 'edit'; const ed = new TextEditor(doc, { useSystemFonts: false });
+  ed.replace({ search: /[A-Za-z]{3,}/, replace: 'Changed text', maxCount: 2 });
+  stage = 'select-replace'; const hit = ed.find(/[A-Za-z]{3,}/)[0];
+  if (hit) ed.replaceAt({ page: hit.page, bbox: hit.bbox, search: hit.text, replace: 'Sel' });
+  stage = 'forms'; const fields = getFormFields(doc);
+  setFormFields(doc, Object.fromEntries(fields.map((f) => [f.name, f.type === 'checkbox' ? true : f.options?.[0]?.value ?? 'Filled'])), { allowReadOnly: true });
   stage = 'save'; const a = doc.save(); const b = doc.save({ incremental: false });
   stage = 'reload'; new PDFDocument(a).pageCount; new PDFDocument(b).pageCount;
   console.log('OK');

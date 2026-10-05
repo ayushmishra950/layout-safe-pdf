@@ -92,3 +92,20 @@ test('editPdf: fields option fills the form and reports problems', async () => {
   assert.deepEqual(report.fields.notFound, ['missing']);
   assert.equal(report.ok, false);
 });
+
+test('forms: malformed Fields / Rect entries do not crash', async () => {
+  const { buildPdf } = await import('./helpers.js');
+  const doc = new PDFDocument(buildPdf([
+    '<</Type /Catalog /Pages 2 0 R /AcroForm <</Fields [5 0 R] /DR <</Font <</Helv 4 0 R>>>> /DA (/Helv 11 Tf 0 g)>>>>',
+    '<</Type /Pages /Kids [3 0 R] /Count 1>>',
+    '<</Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Annots [5 0 R]>>',
+    '<</Type /Font /Subtype /Type1 /BaseFont /Helvetica>>',
+    '<</FT /Tx /T (a) /V (x) /Type /Annot /Subtype /Widget /Rect 7 /Kids 9>>',
+  ]));
+  assert.equal(doc.isSigned, false);
+  const r = setFormFields(doc, { a: 'new value' });
+  assert.deepEqual(r.set, ['a']);
+  const bad = new PDFDocument(buildPdf(['<</Type /Catalog /Pages 2 0 R /AcroForm <</Fields 42>>>>', '<</Type /Pages /Kids [] /Count 0>>']));
+  assert.deepEqual(getFormFields(bad), []);
+  assert.deepEqual(bad.signatures, []);
+});

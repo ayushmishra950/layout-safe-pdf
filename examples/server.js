@@ -4,14 +4,18 @@
 //   node examples/server.js            -> http://localhost:3000
 //
 // POST /edit   (Content-Type: application/json)
-//   { "pdf": "<base64 PDF>", "edits": [{ "search": "Old", "replace": "New" }], "password": "optional" }
+//   { "pdf": "<base64 PDF>",
+//     "edits": [ { "search": "Old", "replace": "New" },                                    // find & replace
+//                { "search": "2024", "replace": "2026", "page": 1, "bbox": [x0,y0,x1,y1] } ], // select & replace
+//     "fields": { "name": "Priyank", "agree": true },                                        // form fields
+//     "password": "optional" }
 //   -> { "pdf": "<base64 edited PDF>", "report": { ok, replaced, edits: [...], warnings } }
 //
 // POST /edit?download=1  -> same request, but the response is the edited PDF itself
 //   (the report is sent in the X-Edit-Report header, URI-encoded JSON)
 
 import http from 'node:http';
-import { editPdf, PDFPasswordError, PDFLimitError } from '../src/index.js';
+import { editPdf, getFormFields, PDFDocument, PDFPasswordError, PDFLimitError } from '../src/index.js';
 
 const PORT = Number(process.env.PORT || 3000);
 const MAX_BODY = 60 * 1024 * 1024; // 60 MB JSON (≈ 45 MB PDF)
@@ -19,6 +23,16 @@ const MAX_BODY = 60 * 1024 * 1024; // 60 MB JSON (≈ 45 MB PDF)
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/health') return send(res, 200, { status: 'ok' });
+  // POST /fields  { pdf } -> list of fillable fields (to build the form UI)
+  if (req.method === 'POST' && url.pathname === '/fields') {
+    try {
+      const body = JSON.parse(await readBody(req));
+      const doc = await PDFDocument.load(Buffer.from(body.pdf || '', 'base64'), { password: body.password });
+      return send(res, 200, { fields: getFormFields(doc) });
+    } catch (err) {
+      return send(res, err instanceof PDFPasswordError ? 401 : 422, { error: err.message });
+    }
+  }
   if (req.method !== 'POST' || url.pathname !== '/edit') return send(res, 404, { error: 'POST /edit' });
 
   try {
@@ -27,6 +41,7 @@ const server = http.createServer(async (req, res) => {
     const { pdf, report } = await editPdf(Buffer.from(body.pdf, 'base64'), body.edits || [], {
       password: body.password,
       editor: body.editor,
+      fields: body.fields,
     });
     if (url.searchParams.get('download')) {
       res.writeHead(200, {

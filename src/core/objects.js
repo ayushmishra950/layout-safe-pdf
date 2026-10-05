@@ -12,21 +12,42 @@
 //   indirect ref -> PDFRef
 
 export class PDFName {
+  // Interning table: one object per name, so names compare with ===.
+  // Entries are weak: once no document uses a name any more it is garbage
+  // collected and its entry removed, so a long-running server that edits
+  // millions of PDFs (each with its own unique font/resource names) does not
+  // accumulate memory.
   static #cache = new Map();
+  static #registry = new FinalizationRegistry((name) => {
+    const ref = PDFName.#cache.get(name);
+    // The name may have been re-created after this object died: keep that one.
+    if (ref && ref.deref() === undefined) PDFName.#cache.delete(name);
+  });
 
   /** @param {string} name decoded name without the leading slash */
   constructor(name) {
     this.name = name;
   }
 
-  /** Returns the interned PDFName for `name` so names can be compared with ===. */
+  /**
+   * Returns the interned PDFName for `name` so names can be compared with ===.
+   * Note: JavaScript keeps WeakRef targets alive until the current task ends,
+   * so memory used by one long synchronous batch is released when the event
+   * loop next turns (between requests on a server, or after the batch).
+   */
   static of(name) {
-    let n = PDFName.#cache.get(name);
+    let n = PDFName.#cache.get(name)?.deref();
     if (!n) {
       n = new PDFName(name);
-      PDFName.#cache.set(name, n);
+      PDFName.#cache.set(name, new WeakRef(n));
+      PDFName.#registry.register(n, name);
     }
     return n;
+  }
+
+  /** Number of names currently interned (for diagnostics and tests). */
+  static get internedCount() {
+    return PDFName.#cache.size;
   }
 
   toString() {

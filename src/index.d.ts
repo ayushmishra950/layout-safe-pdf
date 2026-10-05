@@ -122,6 +122,12 @@ export class TextEditor {
   constructor(doc: PDFDocument, options?: EditorOptions);
   find(search: string | RegExp, options?: { pages?: number[]; caseSensitive?: boolean }): FoundText[];
   replace(options: ReplaceOptions): ReplaceReport;
+  /**
+   * Select & replace: replaces only the occurrence of `search` inside `bbox`
+   * on `page` (0-based), e.g. the text a user selected in a viewer.
+   * bbox is [x0, y0, x1, y1] in PDF points, origin bottom-left.
+   */
+  replaceAt(options: Omit<ReplaceOptions, 'pages' | 'maxCount' | 'formFields'> & { page: number; bbox: [number, number, number, number] }): ReplaceReport;
 }
 
 export interface TextLine {
@@ -171,6 +177,10 @@ export interface Edit {
   replace: string;
   /** Treat `search` as a regular expression. */
   regex?: boolean;
+  /** Select & replace: 1-based page of the selection (use with bbox). */
+  page?: number;
+  /** Select & replace: selected area [x0, y0, x1, y1] in PDF points (origin bottom-left). */
+  bbox?: [number, number, number, number];
   ignoreCase?: boolean;
   /** 1-based page numbers (default: all pages). */
   pages?: number[];
@@ -188,12 +198,24 @@ export interface EditReport {
   warnings: string[];
   pageCount: number;
   text?: string;
+  /** Present when `fields` was passed to editPdf. */
+  fields?: SetFieldsResult;
 }
 
 export function editPdf(
   input: string | Buffer | Uint8Array,
   edits: Edit[],
-  options?: { password?: string; output?: string; incremental?: boolean; includeText?: boolean; editor?: EditorOptions },
+  options?: {
+    password?: string;
+    output?: string;
+    incremental?: boolean;
+    includeText?: boolean;
+    editor?: EditorOptions;
+    /** Fill form fields by full name, e.g. { name: 'Priyank', agree: true }. */
+    fields?: Record<string, FieldValue>;
+    /** Allow setting read-only fields. */
+    allowReadOnly?: boolean;
+  },
 ): Promise<{ pdf: Buffer; report: EditReport }>;
 
 export function diagnose(options?: { scriptFonts?: { deva?: string } }): {
@@ -201,3 +223,33 @@ export function diagnose(options?: { scriptFonts?: { deva?: string } }): {
   checks: Array<{ name: string; ok: boolean; detail: string; fix?: string }>;
   limits: Limits;
 };
+
+// ---- form fields ------------------------------------------------------------------------
+
+export type FieldValue = string | boolean | number | null;
+
+export interface FormField {
+  /** Full (dotted) field name. */
+  name: string;
+  type: 'text' | 'checkbox' | 'radio' | 'dropdown' | 'list' | 'button' | 'signature' | 'unknown';
+  value: string | boolean | string[] | null;
+  readOnly: boolean;
+  /** 0-based page of the field's first widget. */
+  page: number | null;
+  multiline?: boolean;
+  maxLength?: number;
+  /** Choices for radio / dropdown / list fields. */
+  options?: Array<{ value: string; label: string }>;
+  /** Checkbox on-state name. */
+  onValue?: string;
+}
+
+export interface SetFieldsResult {
+  set: string[];
+  notFound: string[];
+  errors: Array<{ field: string; reason: string }>;
+  warnings: string[];
+}
+
+export function getFormFields(doc: PDFDocument): FormField[];
+export function setFormFields(doc: PDFDocument, values: Record<string, FieldValue>, options?: { allowReadOnly?: boolean }): SetFieldsResult;

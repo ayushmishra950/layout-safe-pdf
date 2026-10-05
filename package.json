@@ -14,7 +14,7 @@
     "libr-pdf": "bin/libr-pdf.js"
   },
   "scripts": {
-    "test": "node --test test/*.test.js",
+    "test": "node --expose-gc --test test/*.test.js",
     "try": "node bin/try.js",
     "fuzz": "node test/tools/fuzz.mjs"
   },

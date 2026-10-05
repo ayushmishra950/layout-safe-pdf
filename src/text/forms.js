@@ -16,7 +16,8 @@ function collectFields(doc) {
   const fields = [];
   const seen = new Set();
   const walk = (list, prefix, inherited) => {
-    for (const ref of doc.resolve(list) || []) {
+    const items = doc.resolve(list);
+    for (const ref of Array.isArray(items) ? items : []) {
       if (ref instanceof PDFRef) {
         if (seen.has(ref.num)) continue;
         seen.add(ref.num);
@@ -82,7 +83,8 @@ function refreshTextAppearance(doc, form, f, value) {
     const w = doc.resolve(wRef);
     if (!(w instanceof PDFDict)) continue;
     if (da && simpleFont && isWinAnsiText(value) && !(ff & FF_MULTILINE) && !(ff & FF_PASSWORD)) {
-      const rect = (doc.resolve(w.get('Rect')) || [0, 0, 100, 20]).map((x) => num(doc.resolve(x)));
+      const rawRect = doc.resolve(w.get('Rect'));
+      const rect = Array.isArray(rawRect) && rawRect.length >= 4 ? rawRect.map((x) => num(doc.resolve(x))) : [0, 0, 100, 20];
       const wd = Math.abs(rect[2] - rect[0]);
       const ht = Math.abs(rect[3] - rect[1]);
       const size = da.size || Math.min(12, ht * 0.7);

@@ -411,7 +411,8 @@ export class PDFDocument {
     const out = [];
     const seen = new Set();
     const walk = (fields, prefix) => {
-      for (const ref of this.resolve(fields) || []) {
+      const list = this.resolve(fields);
+      for (const ref of Array.isArray(list) ? list : []) {
         if (ref instanceof PDFRef) {
           if (seen.has(ref.num)) continue;
           seen.add(ref.num);

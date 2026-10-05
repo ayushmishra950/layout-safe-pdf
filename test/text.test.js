@@ -166,7 +166,11 @@ test('fixture: Chrome invoice edits (subset font extended from system font, tabl
   assert.ok(Math.abs(newAmt.bbox[2] - origAmt.bbox[2]) < 0.05, 'right edge of the amount cell kept');
 });
 
-test('fixture: multi-page Xcode license, simple TrueType fonts', async () => {
+// Apple's Xcode licence is a useful real-world multi-page PDF, but it is
+// copyrighted, so it is not committed: the test runs where it exists locally.
+const XCODE_LICENSE = fs.existsSync(FIXTURES + 'xcode-license.pdf');
+
+test('fixture: multi-page Xcode license, simple TrueType fonts', { skip: !XCODE_LICENSE && 'xcode-license.pdf not present (not redistributable)' }, async () => {
   const doc = await PDFDocument.load(FIXTURES + 'xcode-license.pdf');
   const r = new TextEditor(doc).replace({ search: 'Apple Software', replace: 'Libr Software' });
   assert.ok(r.replaced > 50);
