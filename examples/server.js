@@ -81,4 +81,4 @@ function send(res, status, obj) {
   res.end(JSON.stringify(obj));
 }
 
-server.listen(PORT, () => console.log(`libr-pdf API on http://localhost:${PORT}  (POST /edit)`));
+server.listen(PORT, () => console.log(`layout-safe-pdf API on http://localhost:${PORT}  (POST /edit)`));

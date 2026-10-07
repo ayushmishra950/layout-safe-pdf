@@ -1,24 +1,24 @@
 #!/usr/bin/env node
-// Command-line interface for libr-pdf.
+// Command-line interface for layout-safe-pdf.
 
 import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { PDFDocument, TextEditor, extractText, extractLines, ContentInterpreter, diagnose } from '../src/index.js';
 
-const USAGE = `libr-pdf – zero-dependency PDF text editing
+const USAGE = `layout-safe-pdf – zero-dependency PDF text editing
 
 Usage:
-  libr-pdf info    <file.pdf>
-  libr-pdf text    <file.pdf> [--page N] [--positions]
-  libr-pdf find    <file.pdf> <text> [--regex] [--ignore-case]
-  libr-pdf replace <in.pdf> <out.pdf> --search <text> --replace <text>
+  layout-safe-pdf info    <file.pdf>
+  layout-safe-pdf text    <file.pdf> [--page N] [--positions]
+  layout-safe-pdf find    <file.pdf> <text> [--regex] [--ignore-case]
+  layout-safe-pdf replace <in.pdf> <out.pdf> --search <text> --replace <text>
                    [--mode reflow|preserve|fit] [--align auto|left|right|center]
                    [--page N] [--regex] [--ignore-case] [--full] [--no-wrap]
                    [--font Name=path.ttf] [--script-font deva=path.ttf]
-  libr-pdf replace <in.pdf> <out.pdf> --spec edits.json
-  libr-pdf encrypt <in.pdf> <out.pdf> --user-password <pw> [--owner-password <pw>] [--no-copy] [--no-print] [--no-modify]
-  libr-pdf decrypt <in.pdf> <out.pdf> --password <pw>
-  libr-pdf doctor   (checks Node.js and the fonts needed for English and Hindi edits)
+  layout-safe-pdf replace <in.pdf> <out.pdf> --spec edits.json
+  layout-safe-pdf encrypt <in.pdf> <out.pdf> --user-password <pw> [--owner-password <pw>] [--no-copy] [--no-print] [--no-modify]
+  layout-safe-pdf decrypt <in.pdf> <out.pdf> --password <pw>
+  layout-safe-pdf doctor   (checks Node.js and the fonts needed for English and Hindi edits)
 
 Common options:
   --password <pw>   password for encrypted files

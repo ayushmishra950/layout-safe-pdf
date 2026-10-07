@@ -1,5 +1,5 @@
 {
-  "name": "libr-pdf",
+  "name": "layout-safe-pdf",
   "version": "0.1.0",
   "description": "Zero-dependency PDF parsing and layout-preserving editing engine written in pure Node.js",
   "type": "module",
@@ -11,7 +11,7 @@
     }
   },
   "bin": {
-    "libr-pdf": "bin/libr-pdf.js"
+    "layout-safe-pdf": "bin/layout-safe-pdf.js"
   },
   "scripts": {
     "test": "node --expose-gc --test test/*.test.js",
@@ -21,12 +21,14 @@
   "engines": {
     "node": ">=18"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "dependencies": {},
   "devDependencies": {},
   "files": [
     "src",
     "bin",
+    "examples/server.js",
+    "LICENSE",
     "README.md"
   ],
   "types": "src/index.d.ts"

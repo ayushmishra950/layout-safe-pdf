@@ -1,4 +1,4 @@
-// Type definitions for libr-pdf.
+// Type definitions for layout-safe-pdf.
 
 /// <reference types="node" />
 
