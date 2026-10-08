@@ -1,0 +1,18 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Dependencies (the library has none; keep consumers' installs out)
+node_modules/
+package-lock.json
+
+# Local testing with `npm run try`: user PDFs and their outputs stay private
+try/input/*
+!try/input/.gitkeep
+try/output/*
+!try/output/.gitkeep
+
+# Not redistributable (Apple copyright); tests use it only when present locally
+test/fixtures/xcode-license.pdf
