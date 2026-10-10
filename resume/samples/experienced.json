@@ -1,0 +1,88 @@
+{
+  "name": "Rohan Mehta",
+  "title": "MERN Stack Developer",
+  "contact": {
+    "phone": "+91 90000 00000",
+    "email": "rohan.mehta@example.com",
+    "location": "Pune, Maharashtra"
+  },
+  "summary": "MERN Stack Developer with 2 years of experience building and shipping web and mobile applications using MongoDB, Express.js, React, and Node.js. Skilled in React Native (Expo) for cross-platform mobile development, with multiple live apps on both iOS and Android. Currently pursuing BCA to strengthen core computer science fundamentals alongside hands-on industry experience.",
+  "experience": [
+    {
+      "role": "MERN Stack Developer",
+      "company": "Example Technologies Pvt. Ltd.",
+      "location": "Baner Road, Pune",
+      "start": "Jan 2026",
+      "end": "Present",
+      "bullets": [
+        "Working as a MERN Stack Developer, handling both frontend and backend development for live production applications.",
+        "Contributing to end-to-end feature development using React, Node.js, Express.js, and MongoDB."
+      ]
+    },
+    {
+      "role": "Frontend Developer",
+      "company": "Sample Tech Solutions Pvt. Ltd.",
+      "start": "Oct 2025",
+      "end": "Dec 2025",
+      "duration": "3 months",
+      "bullets": [
+        "Developed and maintained responsive frontend interfaces using React.js.",
+        "Worked closely with backend teams to integrate APIs and improve UI performance."
+      ]
+    },
+    {
+      "role": "MERN Developer",
+      "company": "Demo Softworks Pvt. Ltd.",
+      "start": "Oct 2024",
+      "end": "Sep 2025",
+      "duration": "1 year",
+      "bullets": [
+        "Built full-stack web applications using MongoDB, Express.js, React, and Node.js.",
+        "Learned and applied React Native (Expo) to develop and deploy cross-platform mobile applications.",
+        "Worked on live projects including Office Management System, Stock Management System, and Jain Social Group Online, along with their companion mobile apps (React Native, Expo)."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Office Management System",
+      "description": "Web application for managing internal office operations and workflows",
+      "tech": "MERN Stack"
+    },
+    {
+      "name": "Stock Management System",
+      "description": "Web application along with a mobile app (React Native, Expo) to track and manage inventory/stock in real time",
+      "tech": "MERN Stack"
+    },
+    {
+      "name": "Jain Social Group Online",
+      "description": "Web platform along with a mobile app (React Native, Expo) for the Jain Social Group community."
+    },
+    {
+      "name": "Translation App",
+      "description": "Mobile application (iOS & Android) for language translation, built with React Native (Expo); live on both platforms."
+    },
+    {
+      "name": "Assignment App",
+      "description": "Mobile application (iOS & Android) for managing assignments; live on both platforms."
+    },
+    {
+      "name": "Business Translation App",
+      "description": "Mobile application (iOS & Android) currently in development, focused on business-oriented translation use cases."
+    }
+  ],
+  "skills": {
+    "Frontend": "React.js, HTML5, CSS3, JavaScript (ES6+)",
+    "Backend": "Node.js, Express.js",
+    "Database": "MongoDB; basic knowledge of PostgreSQL and Prisma",
+    "Mobile": "React Native, Expo (iOS & Android app development and deployment)",
+    "Tools & Others": "Git, REST APIs, Postman"
+  },
+  "education": [
+    {
+      "degree": "Bachelor of Computer Applications (BCA)",
+      "institution": "Example University, Pune — Online Mode",
+      "status": "In Progress (1st Year)"
+    }
+  ]
+}

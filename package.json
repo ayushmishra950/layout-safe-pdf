@@ -1,17 +1,22 @@
 {
   "name": "layout-safe-pdf",
   "version": "0.1.0",
-  "description": "Zero-dependency PDF parsing and layout-preserving editing engine written in pure Node.js",
+  "description": "Zero-dependency PDF toolkit in pure Node.js: edit text in existing PDFs without breaking the layout, fill forms, and generate resume PDFs from JSON",
   "type": "module",
   "main": "src/index.js",
   "exports": {
     ".": {
       "types": "./src/index.d.ts",
       "default": "./src/index.js"
+    },
+    "./resume": {
+      "types": "./resume/index.d.ts",
+      "default": "./resume/index.js"
     }
   },
   "bin": {
-    "layout-safe-pdf": "bin/layout-safe-pdf.js"
+    "layout-safe-pdf": "bin/layout-safe-pdf.js",
+    "layout-safe-resume": "resume/cli.js"
   },
   "scripts": {
     "test": "node --expose-gc --test test/*.test.js",
@@ -28,6 +33,10 @@
     "src",
     "bin",
     "examples/server.js",
+    "resume/*.js",
+    "resume/*.d.ts",
+    "resume/fonts",
+    "resume/samples",
     "LICENSE",
     "README.md"
   ],

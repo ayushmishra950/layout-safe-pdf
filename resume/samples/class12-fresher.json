@@ -1,0 +1,59 @@
+{
+  "name": "Kunal Verma",
+  "title": "Aspiring Software Developer",
+  "contact": {
+    "phone": "+91 91234 56789",
+    "email": "kunal.verma@example.com",
+    "location": "Jodhpur, Rajasthan",
+    "github": "github.com/kunalverma"
+  },
+  "summary": "Recently passed Class XII (Science with Computer Science) with 86%, seeking admission to a B.Tech/BCA programme and an entry-level opportunity in software development. Comfortable with HTML, CSS, JavaScript and Python basics, with a few small personal projects built through self-learning and online courses.",
+  "education": [
+    {
+      "degree": "Senior Secondary (Class XII) – Science with Computer Science",
+      "institution": "Rajasthan Board of Secondary Education (RBSE), Jodhpur",
+      "status": "2025",
+      "grade": "86%"
+    },
+    {
+      "degree": "Secondary (Class X)",
+      "institution": "Rajasthan Board of Secondary Education (RBSE), Jodhpur",
+      "status": "2023",
+      "grade": "89%"
+    }
+  ],
+  "skills": [
+    { "label": "Programming", "items": ["Python (basics)", "JavaScript (basics)", "C (basics)"] },
+    { "label": "Web", "items": ["HTML5", "CSS3", "Responsive design"] },
+    { "label": "Tools", "items": ["VS Code", "Git & GitHub (basics)", "MS Office"] },
+    { "label": "Soft Skills", "items": ["Quick learner", "Team work", "Communication"] }
+  ],
+  "projects": [
+    {
+      "name": "Personal Portfolio Website",
+      "description": "Responsive multi-section portfolio built from scratch and hosted on GitHub Pages",
+      "tech": "HTML, CSS, JavaScript"
+    },
+    {
+      "name": "Student Marks Calculator",
+      "description": "Python program that takes subject marks, calculates percentage and grade, and stores records in a file",
+      "tech": "Python"
+    },
+    {
+      "name": "To-Do List App",
+      "description": "Browser-based task manager with add, delete and mark-as-done features; data saved in local storage",
+      "tech": "HTML, CSS, JavaScript"
+    }
+  ],
+  "certifications": [
+    "Python for Beginners – Online course (2025)",
+    "Web Development Basics – freeCodeCamp (2025)"
+  ],
+  "achievements": [
+    "Scored 95/100 in Computer Science in Class XII board examination",
+    "School-level winner, Inter-house Quiz Competition (2024)"
+  ],
+  "sections": [
+    { "title": "Languages", "bullets": ["English (fluent), Hindi (native)"] }
+  ]
+}

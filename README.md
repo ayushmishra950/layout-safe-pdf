@@ -1,62 +1,57 @@
 # layout-safe-pdf
 
-Edit the text of an existing PDF **without breaking its layout**. Pure Node.js, **zero dependencies**: it uses only the built-in `fs`, `zlib`, `crypto` and `Buffer`.
+A zero-dependency PDF toolkit for Node.js. It does two jobs:
+
+1. **Edit the text of an existing PDF without breaking its layout** (find & replace, click-and-edit, form filling).
+2. **Generate a professional resume PDF from JSON** in one fixed, consistent format.
+
+Pure Node.js. No npm dependencies, no Python, no Java, no native binaries. It only uses the built-in `fs`, `zlib`, `crypto`, `http` and `Buffer`.
 
 ```js
 import { editPdf } from 'layout-safe-pdf';
+import { buildResume } from 'layout-safe-pdf/resume';
 
-const { pdf, report } = await editPdf('invoice.pdf', [
-  { search: 'Rahul Sharma', replace: 'Priyank Dadhich' },
-  { search: '25,000', replace: '1,25,000' },
-]);
+await editPdf('invoice.pdf', [{ search: 'Rahul Sharma', replace: 'Priyank Dadhich' }], { output: 'out.pdf' });
+const { pdf } = buildResume({ name: 'Rohan Mehta', skills: { Languages: 'JavaScript, Python' } });
 ```
 
 ## Contents
 
 - [The problem it solves](#the-problem-it-solves)
-- [When to use it (and when not)](#when-to-use-it-and-when-not)
+- [Features](#features)
 - [Install](#install)
-- [Quick start](#quick-start)
-- [Ways to edit](#ways-to-edit)
-- [How edits keep the layout intact](#how-edits-keep-the-layout-intact)
-- [Other APIs](#other-apis)
-- [CLI](#cli)
-- [Options](#options)
-- [Limits and file size](#limits-and-file-size)
-- [Errors](#errors)
-- [Production notes](#production-notes)
-- [Supported features and known gaps](#supported-features-and-known-gaps)
+- [How to use, step by step](#how-to-use-step-by-step)
+- [HTTP API (Postman, any language)](#http-api-postman-any-language)
+- [Command line](#command-line)
+- [Good to know](#good-to-know)
+- [Testing](#testing)
+- [License](#license)
 
 ## The problem it solves
 
-A PDF does not store paragraphs or table cells. It stores positioned glyphs. Replacing a name with a longer one by hand-editing the content stream pushes text into its neighbours, breaks right-aligned numbers, loses fonts that were embedded as subsets, and corrupts Hindi/Devanagari text.
+**Editing PDFs.** A PDF does not store paragraphs or table cells, only positioned glyphs. Changing "Rahul" to "Priyank Dadhich" by hand-editing the file pushes text into its neighbours, breaks right-aligned amounts, loses fonts that were embedded as subsets, and corrupts Hindi text. Developers usually work around this with a Python script, a Java library or a paid service. This library does it in plain Node.js and keeps the page looking like the original.
 
-`layout-safe-pdf` handles those cases for you:
+**Generating resumes.** Apps that collect user details (job portals, career sites, college tools) need to turn that data into a clean, consistent resume. Rendering HTML to PDF needs a headless browser, which is heavy. This library writes the PDF directly from JSON, in the same format every time, with proper page breaks.
 
-- Only the text operations that contain the match are rewritten. Graphics, images and every other byte of the page stay unchanged.
-- The rest of the line moves with the new width. The text is condensed slightly when it would hit a table border or the next column.
-- Right-aligned and centred table cells keep their alignment, so amounts grow to the left.
-- Characters missing from an embedded font subset are added from a matching system font, and the PDF stays searchable and copyable.
-- Paragraphs are re-wrapped (and re-justified) when an edit no longer fits on its line.
-- Devanagari text is shaped correctly (conjuncts, matras, reph).
-- Encrypted files are decrypted, edited and re-encrypted. Fillable form fields can be filled by name.
+## Features
 
-## When to use it (and when not)
+### Edit existing PDFs
+- **Find & replace** text, as plain strings or regular expressions, on all pages or selected ones.
+- **Select & replace**: change only the occurrence at a given place on the page (the call behind a "click a word and edit it" editor).
+- **Layout-safe**: the rest of the line moves with the new width, right-aligned and centred cells stay aligned, long text is condensed slightly instead of hitting a border, and paragraphs are re-wrapped when needed.
+- **Fonts**: embedded subset fonts keep working. Characters the subset lacks are added from a matching font, and the PDF stays searchable and copyable.
+- **Hindi (Devanagari)** is shaped correctly (conjuncts, matras, reph).
+- **Form filling**: list the fields of an AcroForm PDF and fill text fields, checkboxes, radio buttons and dropdowns by name.
+- **Encryption**: open encrypted PDFs, edit them and save them encrypted again. Add or remove AES-256 encryption.
+- **Text extraction** with positions, and an environment check (`doctor`).
+- Only the edited text operations are rewritten. Images, graphics and everything else stay byte-for-byte unchanged, and the original file can be kept intact (incremental save).
 
-**Good fit**
-- Correcting or personalising generated PDFs: invoices, certificates, offer letters, receipts, forms.
-- Template-style replacement across many files (names, dates, amounts, IDs, regex patterns).
-- A "click a word, type a new one" editor, either in a web app or behind an HTTP API.
-- Filling AcroForm fields and reading the list of fields.
-- Extracting text with positions from a PDF.
-- Server-side batch jobs where installing Python, Java or native binaries is not an option.
-
-**Not a fit**
-- **Scanned PDFs** whose text is only an image. There is nothing to edit and no OCR, so these report `notFound`.
-- Editing images, drawings or page structure (adding, removing or reordering pages).
-- Visual, drag-and-drop layout editing.
-- Preserving a digital signature. Editing a signed PDF invalidates the signature, and `replace()` warns about it.
-- Bengali, Gujarati, Tamil and other Indic scripts, and vertical writing. See [known gaps](#supported-features-and-known-gaps).
+### Generate resumes
+- **One professional format**: US Letter, Carlito (Calibri-compatible) font, blue section headings, right-aligned dates, bullet lists. Text is selectable and copyable, and email and profile links are clickable.
+- **Fresher and experienced layouts, chosen automatically.** Someone with a job gets Summary → Experience → Projects → Skills → Education. A fresher (no job, or internships only) gets Summary → Education → Skills → Internship → Projects.
+- **Automatic extra pages.** If the content is more than one page, it flows onto page 2, 3 and so on with the same margins and spacing. Headings and job titles are never left alone at the bottom of a page.
+- **Sparse resumes look full.** When there is little data, spacing (and font size, a little) opens up so the page looks balanced. Full resumes keep the reference spacing.
+- **Nothing is stored.** The PDF is built in memory and returned to you. The library never writes files unless you ask for an output path.
 
 ## Install
 
@@ -64,241 +59,189 @@ A PDF does not store paragraphs or table cells. It stores positioned glyphs. Rep
 npm install layout-safe-pdf
 ```
 
-Requires Node.js 18 or newer. ESM only (`import`). TypeScript types are included.
+Needs Node.js 18 or newer. ESM only (`import`). TypeScript types are included.
 
-## Quick start
+## How to use, step by step
+
+### 1. Edit text in a PDF
 
 ```js
 import { editPdf } from 'layout-safe-pdf';
 
-const { pdf, report } = await editPdf('input.pdf', [   // a path or a Buffer
-  { search: 'Full Stack Developer', replace: 'Python Developer', pages: [1] },
+const { pdf, report } = await editPdf('input.pdf', [   // a file path or a Buffer
+  { search: 'Rahul Sharma', replace: 'Priyank Dadhich' },
   { search: /INV-\d{4}/.source, regex: true, replace: 'INV-2026' },
-], { output: 'output.pdf' });                           // optional: also write to disk
+], { output: 'output.pdf' });                           // optional: also save to disk
 
-if (!report.ok) console.log(report.edits);              // notFound / skipped reasons per edit
+if (!report.ok) console.log(report.edits);              // see which edit was not found or skipped and why
 ```
 
-`pdf` is a `Buffer` with the edited file. `report` is:
+- `pdf` is a `Buffer` with the edited file.
+- `report.ok` is `true` only if every edit replaced something and nothing was skipped. Nothing is skipped silently.
+- An edit accepts `search`, `replace`, `regex`, `ignoreCase`, `pages` (1-based list), `maxCount`, `mode` (`'reflow'`, `'preserve'`, `'fit'`), `align` and `wrap`.
+- If the PDF is encrypted, pass `{ password: '...' }` as an option.
 
-```
-{ ok, replaced, pageCount, warnings, edits: [{ search, replace, replaced, skipped, warnings, notFound? }] }
-```
+### 2. Change only one specific word (select & replace)
 
-`report.ok` is `true` only when every edit replaced something and nothing was skipped. Nothing is skipped silently.
-
-An edit takes: `search`, `replace`, `regex`, `ignoreCase`, `pages` (1-based), `maxCount`, `mode`, `align`, `wrap`. In `replace`, `$&` means the matched text.
-
-## Ways to edit
-
-**1. Find & Replace.** Replaces every occurrence, or limit it with `pages` or `maxCount`:
+Use this when the same text appears more than once and you want to change just one of them:
 
 ```js
-await editPdf(pdf, [{ search: 'Rahul Sharma', replace: 'Priyank Dadhich', pages: [1, 2] }]);
+await editPdf(pdf, [{ search: 'Rahul', replace: 'Priyank', page: 2, bbox: [x0, y0, x1, y1] }]);
 ```
 
-**2. Select & Replace.** Changes only the occurrence at a given place, even if the same text appears elsewhere. This is the call behind a "click a word and edit it" UI:
+`page` is 1-based. `bbox` is in PDF points with the origin at the **bottom left**.
+
+### 3. Fill a form
 
 ```js
-await editPdf(pdf, [{ search: selectedText, replace: newText, page: 2, bbox: [x0, y0, x1, y1] }]);
+import { PDFDocument, getFormFields, editPdf } from 'layout-safe-pdf';
+
+const doc = await PDFDocument.load('form.pdf');
+console.log(getFormFields(doc));           // names, types, current values, options
+
+await editPdf('form.pdf', [], {
+  fields: { name: 'Priyank Dadhich', agree: true, gender: 'Male', state: 'Delhi' },
+  output: 'filled.pdf',
+});
 ```
 
-`page` is 1-based. `bbox` is in PDF points with the origin at the **bottom left**. With pdf.js in the browser, convert a selection rectangle like this:
+Read-only fields, unknown options and values that are too long are refused, and `report.fields` tells you why.
+
+### 4. Generate a resume
 
 ```js
-const [x0, y0] = viewport.convertToPdfPoint(rect.left - pageLeft, rect.bottom - pageTop);
-const [x1, y1] = viewport.convertToPdfPoint(rect.right - pageLeft, rect.top - pageTop);
+import { buildResume } from 'layout-safe-pdf/resume';
+
+const { pdf, pages, layout, warnings } = buildResume({
+  name: 'Rohan Mehta',
+  title: 'Software Developer',
+  contact: { phone: '+91 90000 00000', email: 'rohan@example.com', location: 'Pune', github: 'github.com/rohan' },
+  summary: 'Developer with 2 years of experience building web applications.',
+  experience: [
+    { role: 'Software Developer', company: 'Example Pvt. Ltd.', location: 'Pune',
+      start: 'Jan 2024', end: 'Present', bullets: ['Built REST APIs with Node.js.', 'Reduced page load time by 30%.'] },
+  ],
+  projects: [{ name: 'Task Tracker', description: 'Kanban-style task manager', tech: 'MERN Stack' }],
+  skills: { Frontend: 'React, HTML, CSS', Backend: 'Node.js, Express' },
+  education: [{ degree: 'B.Tech in Computer Science', institution: 'Example University', status: '2023', grade: 'CGPA: 8.1' }],
+}, { output: 'resume.pdf' });   // output is optional; pdf is also returned as a Buffer
 ```
 
-**3. Fill form fields.** `getFormFields(doc)` lists every field (name, type, value, options, read-only flag). Fill them by name:
+Only `name` is required. Anything you leave out simply does not appear.
+
+| Key | What it takes |
+|---|---|
+| `name`, `title` | Header. |
+| `contact` | `phone, email, location, linkedin, github, portfolio, website, other[]`. Email and links become clickable. |
+| `summary` | A short paragraph. |
+| `experience[]` | `role, company, location, start, end` (or `dates`), `duration`, `internship: true`, `bullets[]`. |
+| `projects[]` | `name, description, tech, link`. |
+| `skills` | `{ "Frontend": "React, CSS" }` or `[{ label, items[] }]`. |
+| `education[]` | `degree, institution, status` (year), `grade`, `details[]`. |
+| `certifications[]`, `achievements[]` | Lists of strings. |
+| `sections[]` | `[{ title, bullets[] }]` for any extra section (Languages, Volunteering, ...). |
+| `layout`, `order`, `titles` | Optional: force `"fresher"` or `"experienced"`, set the section order, rename headings. |
+| `spacing` | `"auto"` (default) or `"normal"`. See below. |
+
+**Fresher vs experienced.** Chosen automatically. A candidate with only internships, or no experience at all, is laid out as a fresher (education first). Set `layout` to override.
+
+**More than one page.** Just pass more data. The extra content moves to the next page by itself. `pages` in the result tells you how many pages were produced.
+
+**Little data.** With `spacing: "auto"`, a sparse resume is spaced out so the page does not look empty. Very little data still leaves some empty space, on purpose, so it never looks bloated. Use `spacing: "normal"` to always keep the reference spacing. The result's `spacing` field shows what was applied.
+
+**Warnings.** Characters that the font cannot show (for example Chinese) are replaced with `?` and listed in `warnings`.
+
+Ready-made example data is in [`resume/samples/`](resume/samples) (fresher, experienced, a Class 12 student, and a very long resume).
+
+### 5. Lower-level control (edit API)
 
 ```js
-await editPdf(pdf, [], { fields: { name: 'Priyank Dadhich', agree: true, gender: 'Male', state: 'Delhi' } });
-```
-
-- Supported: text fields (including empty ones), checkboxes (`true`/`false`), radio groups (an option value), dropdowns and lists.
-- Appearances are regenerated so every viewer shows the new values.
-- Read-only fields, unknown options and values that are too long are refused. `report.fields` gives the reason for each.
-
-## How edits keep the layout intact
-
-1. **Exact glyph positions.** The content interpreter tracks the full graphics and text state, including `cm`, `q/Q`, `Tm`, `Td`, `TJ` kerning and Form XObjects. For every glyph it records its operation and exact page position.
-2. **Surgical rewrite.** Only the operations that contain affected glyphs are re-emitted. Graphics, images, inline images and marked content are copied unchanged.
-3. **Exact repositioning.** `TJ` displacements put every glyph outside the match at its planned position (checked to 1/1000 pt in tests).
-4. **Layout decisions** (`mode: 'reflow'`, the default):
-   - The rest of the line moves with the new width. Free space is bounded by table borders (detected from painted lines and rectangles), the next column and the page text area.
-   - If the new text does not fit, it is condensed horizontally (`Tz`) down to `minScale` (default 50%).
-   - Justified lines absorb the change in their word gaps, so both edges stay flush.
-   - `align: 'auto'` detects right-aligned and centred cells.
-   - Several matches on one line share that line's free space.
-   - Other modes: `preserve` (nothing else moves) and `fit` (always squeeze the new text into the old width).
-5. **Missing glyphs.** If the new text needs a character that an embedded subset lacks, the engine finds the same font on the system (or uses `fonts` / `fallbackFont`), subsets it, and embeds the glyphs with a `ToUnicode` map.
-6. **Paragraph re-wrap.** When an edit does not fit on its line, the engine detects the paragraph (consistent leading, shared left edge, lines that ended because the next word did not fit) and lays it out again. It tries a barely visible condensing (down to 93%) first. It only adds lines where the page below is empty. Pass `wrap: false` to disable this.
-7. **Devanagari.** A built-in OpenType layout engine (GDEF, GSUB, GPOS) and Indic shaper produce the glyph runs. Output is written with `ActualText`, so search and copy/paste return the logical text. Output matched Apple CoreText glyph-for-glyph on a test word set.
-8. **Incremental save.** By default, changes are appended and the original bytes stay unchanged. `{ incremental: false }` writes a clean full rewrite and drops unused objects.
-
-## Other APIs
-
-The lower-level classes give you full control:
-
-```js
-import { PDFDocument, TextEditor, extractText, getFormFields } from 'layout-safe-pdf';
+import { PDFDocument, TextEditor, extractText } from 'layout-safe-pdf';
 
 const doc = await PDFDocument.load('invoice.pdf', { password: 'open' }); // password only if encrypted
 const editor = new TextEditor(doc);
+editor.replace({ search: 'Rahul Sharma', replace: 'Priyank Dadhich' });
+console.log(extractText(doc, 0));                                        // text of page 0
 
-const result = editor.replace({ search: 'Rahul Sharma', replace: 'Priyank Dadhich' });
-// result: { replaced, skipped: [{ page, text, reason }], warnings, details }
-
-editor.replaceAt({ page: 0 /* 0-based here */, bbox, search, replace }); // select & replace
-console.log(extractText(doc, 0));                                         // text of page 0
-console.log(getFormFields(doc));
-
-const bytes = doc.save();              // Buffer; or: await doc.saveAs('out.pdf')
-
+const bytes = doc.save();                                                // Buffer
 doc.encrypt({ userPassword: 'open', ownerPassword: 'owner', permissions: { copy: false } }); // AES-256
 ```
 
-Also exported: `extractLines` (words with positions), `diagnose()` (environment check), `setFormFields`, `setLimits`, and the PDF object classes. See `src/index.d.ts` for every type.
+Also exported: `extractLines` (words with positions), `getFormFields`, `setFormFields`, `diagnose`, `setLimits`. See `src/index.d.ts` for all types.
 
-## CLI
+## HTTP API (Postman, any language)
 
-```bash
-npx layout-safe-pdf info file.pdf
-npx layout-safe-pdf text file.pdf --page 1 --positions
-npx layout-safe-pdf find file.pdf "Rahul"
-npx layout-safe-pdf replace in.pdf out.pdf --search "Rahul Sharma" --replace "Priyank Dadhich"
-npx layout-safe-pdf replace in.pdf out.pdf --spec edits.json
-npx layout-safe-pdf encrypt in.pdf out.pdf --user-password open --no-copy
-npx layout-safe-pdf decrypt in.pdf out.pdf --password open
-npx layout-safe-pdf doctor
-```
+Two small servers with no dependencies are included. Neither stores anything on disk.
 
-`doctor` checks Node.js and the fonts available for English and Hindi edits. Run it on a new server first.
-
-## Options
-
-`new TextEditor(doc, options)` (or `editPdf(..., { editor: options })`):
-
-| Option | Meaning |
-|---|---|
-| `fonts` | Maps PDF font names to font files, e.g. `{ ArialMT: '/path/arial.ttf' }`. |
-| `fontDirs` | Extra folders to search for fonts. |
-| `scriptFonts` | Font per script, e.g. `{ deva: '/path/NotoSansDevanagari.ttf' }`. |
-| `fallbackFont` | Font file to use when nothing matches. |
-| `useSystemFonts` | Set `false` to ignore installed fonts. |
-| `substituteFonts` (default `true`) | When the PDF's font is not installed, use the most similar installed font and report a warning. |
-| `embedMissingGlyphs` (default `true`) | Embed characters that the PDF's font subset lacks. |
-
-`editPdf(input, edits, options)` also accepts `password`, `output` (a path to write), `incremental` (default `true`), `includeText` (adds the edited text to the report, handy for checks), `fields` (form values) and `allowReadOnly`.
-
-## Limits and file size
-
-There is **no fixed file-size cap** in the library. The whole PDF is read into memory, so the practical limit is your RAM and your time budget. These numbers were measured on Node 20 with a text-heavy synthetic PDF (45 lines per page, one replacement per line) and with image-heavy files, on a development Mac:
-
-| Input | Result |
-|---|---|
-| 100 pages (0.5 MB) | about 0.3 s |
-| 500 pages (2.3 MB, 22,500 replacements) | about 1.2 s |
-| 2,000 pages (9.4 MB, 90,000 replacements) | about 4.8 s |
-| 100 MB (one huge image) | 50 ms, about 600 MB RSS |
-| 500 MB | under 1 s, about 2.2 GB RSS |
-| 1 GB (10 pages) | about 1.4 s, about 2.8 GB RSS |
-
-- **Time:** roughly 1 ms per page to extract text and a few ms per text-heavy page to edit. Images are copied, not decoded, so large image-only files are fast.
-- **Memory:** plan for about **3–5 times the file size** in RAM (the input, the working copy and the output exist at the same time).
-- **Hard ceiling:** Node's `Buffer` limit is 4 GB, so a single file above about 4 GB cannot be loaded.
-
-**Recommended sizes**
-
-| Use | Suggested maximum |
-|---|---|
-| Public web API with user uploads | **25–50 MB and about 500–1,000 pages** per file, with a request timeout |
-| Internal or trusted batch jobs | Several hundred MB, as long as RAM allows |
-| The bundled `examples/server.js` | 60 MB JSON body (about 45 MB PDF) |
-
-**Built-in safety limits.** These protect the process from hostile files such as decompression bombs or pages with millions of glyphs. They throw a `PDFLimitError`:
-
-| Limit | Default | Meaning |
-|---|---|---|
-| `maxStreamSize` | 256 MB | Largest **decoded** size of one stream |
-| `maxGlyphsPerPage` | 2,000,000 | Most glyphs on one page |
-| `maxNestingDepth` | 512 | Deepest nesting of arrays and dictionaries |
-| `maxObjectsPerStream` | 1,000,000 | Most objects in one object stream |
-
-A normal page has a few thousand glyphs, so real documents never get near these. Raise them only for trusted input:
-
-```js
-import { setLimits } from 'layout-safe-pdf';
-setLimits({ maxStreamSize: 512 * 1024 * 1024 });
-```
-
-## Errors
-
-| Error | When |
-|---|---|
-| `Error: Not a PDF file` | Empty input, or not a PDF (for example a gzip file). |
-| `PDFPasswordError` | The file is encrypted and the password is missing or wrong. |
-| `PDFLimitError` | A safety limit above was exceeded. The message names the limit to raise. |
-| `PDFSyntaxError` | The file is structurally broken in a way that cannot be repaired. |
-| `TypeError` | `edits` is not an array, or an edit has no string `search` / `replace`. |
-
-Not errors, but reported in `report`:
-- `notFound: true` means the text does not exist in the PDF. This happens with scanned PDFs, with text split by unusual encodings, and with typos. Check with `extractText` or `find`.
-- `skipped` entries explain why a match was left unchanged (for example a missing glyph with no usable font, or a read-only form field).
-- Damaged files (wrong offsets, missing `startxref`, truncated downloads) are repaired automatically, and `report.warnings` says what was fixed.
-
-## Production notes
-
-- **Event loop.** The work is synchronous and CPU-bound. For a busy API, run it in a `worker_threads` pool (for example Piscina) so requests do not block each other.
-- **Memory.** Nothing is cached per document after a request, and interned PDF names are held weakly, so a long-running server stays flat. In one long synchronous batch, yield between files with `await new Promise((r) => setImmediate(r))`.
-- **Fonts on servers.** New characters and Devanagari need fonts. On Linux, install fonts (for example `fonts-noto-core`, `fonts-liberation`) or pass `fonts`, `fontDirs` or `scriptFonts`. Run `doctor` to check.
-- **Signed PDFs.** `doc.isSigned` and `doc.signatures` tell you whether a document is signed.
-- **Untrusted uploads.** Keep the default limits, cap the upload size, and set a timeout.
-
-### HTTP API example
-
-The package ships `examples/server.js`, a small server with no dependencies:
+**Resume API**
 
 ```bash
-node node_modules/layout-safe-pdf/examples/server.js
+node node_modules/layout-safe-pdf/resume/server.js     # http://localhost:3001
+```
+
+- `POST /resume` with the resume JSON as the body returns the PDF. The page count and layout are in the `X-Resume-Pages` and `X-Resume-Layout` headers.
+- `POST /resume?format=json` returns `{ pdf: "<base64>", pages, layout, warnings }`.
+- In Postman: **Body → raw → JSON**, paste the data, press **Send** (use **Send and Download** to save the PDF).
+
+**Edit API**
+
+```bash
+node node_modules/layout-safe-pdf/examples/server.js   # http://localhost:3000
 ```
 
 - `POST /edit` takes `{ "pdf": "<base64>", "edits": [...], "fields": {...}, "password": "..." }` and returns `{ "pdf": "<base64>", "report": {...} }`.
 - `POST /edit?download=1` returns the PDF itself, with the report in the `X-Edit-Report` header.
 - `POST /fields` lists the form fields of an uploaded PDF.
 
-## Supported features and known gaps
+Set the port with `PORT=4000`.
 
-| Area | Status |
-|---|---|
-| Classic xref, xref streams, object streams, hybrid files, damaged files | Supported (repaired automatically) |
-| Filters: Flate, LZW, ASCII85, ASCIIHex, RunLength, PNG/TIFF predictors | Supported (image codecs are passed through) |
-| Encryption: RC4 40/128, AES-128, AES-256 (R5/R6) | Read, edit and re-encrypt; create AES-256; remove encryption |
-| Fonts: Type1, TrueType, Type3, Type0/CID, Standard-14, CFF/OpenType, `.ttc` | Supported |
-| Find & replace (string or regex), select & replace, text inside Form XObjects | Supported |
-| Paragraph re-wrap and re-justification | Supported (only into free space) |
-| Devanagari (Hindi, Marathi, …) | Supported. Needs a Devanagari OpenType font such as Noto Sans Devanagari, Kohinoor, Mangal or Nirmala UI |
-| Hindi PDFs without ActualText (for example from MS Word) | Supported (visual-to-logical repair of ि and reph) |
-| Legacy Kruti Dev and DevLys 010 fonts | Read as Unicode, edits written in the original font |
-| Fillable form fields (text, checkbox, radio, dropdown, list) | Supported |
-| Text extraction with positions | Supported |
-| Other legacy Hindi layouts (for example Chanakya) | Not supported |
-| Other Indic scripts (Bengali, Gujarati, Tamil, …) | Not supported (the shaper is Devanagari-only) |
-| Pulling words up into the previous line when text gets shorter | Not supported (shorter text leaves the line ragged) |
-| Vertical writing, Type3 font substitution | Not supported |
-| Scanned PDFs (text only as images) | Not supported (needs OCR) |
-| Adding, removing or reordering pages; editing images | Not supported |
+## Command line
+
+```bash
+# edit
+npx layout-safe-pdf text file.pdf --page 1
+npx layout-safe-pdf find file.pdf "Rahul"
+npx layout-safe-pdf replace in.pdf out.pdf --search "Rahul Sharma" --replace "Priyank Dadhich"
+npx layout-safe-pdf replace in.pdf out.pdf --spec edits.json
+npx layout-safe-pdf encrypt in.pdf out.pdf --user-password open --no-copy
+npx layout-safe-pdf decrypt in.pdf out.pdf --password open
+npx layout-safe-pdf doctor           # checks Node.js and the fonts available for edits
+
+# resume (the output path is required)
+npx layout-safe-resume data.json resume.pdf
+```
+
+## Good to know
+
+**Not a fit**
+- Scanned PDFs where the text is only an image (no OCR, so edits report `notFound`).
+- Editing images or drawings, or adding, removing and reordering pages of an existing PDF.
+- Keeping a digital signature valid: editing a signed PDF invalidates the signature (`replace()` warns about it).
+- Bengali, Gujarati, Tamil and other Indic scripts, and vertical writing.
+- Resume text in scripts that Carlito does not contain (such as Chinese or Arabic).
+
+**Size and safety**
+- The whole PDF is read into memory, so plan for roughly 3 to 5 times the file size in RAM. For a public upload API, keep files around 25 to 50 MB and set a request timeout.
+- Built-in limits stop decompression bombs and hostile files with a `PDFLimitError`. You can raise them for trusted input with `setLimits(...)`.
+- The work is synchronous and CPU-bound. For a busy server, run it in a `worker_threads` pool.
+- New characters and Devanagari in edits need a font. On Linux, install fonts such as `fonts-noto-core` and `fonts-liberation`, or pass `fonts`, `fontDirs` or `scriptFonts`. Run `doctor` to check.
+
+**Errors you may see**
+- `PDFPasswordError`: the file is encrypted and the password is missing or wrong.
+- `PDFLimitError`: a safety limit was exceeded (the message names it).
+- `PDFSyntaxError`: the file is broken beyond repair.
+- `report.edits[].notFound`: the text does not exist in the PDF.
+- `resume data needs a "name"`: `buildResume` was called without a name.
 
 ## Testing
 
 ```bash
-npm test          # 90 unit, integration and regression tests
-npm run fuzz -- 1000   # mutation fuzzing with corrupted files
+npm test                 # unit, integration and regression tests, including the resume generator
+npm run fuzz -- 1000     # mutation fuzzing with corrupted files
 ```
 
-CI runs both on Linux, macOS and Windows with Node 18, 20 and 22.
+CI runs the tests on Linux, macOS and Windows with Node 18, 20 and 22.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). The resume generator bundles the Carlito font, which is licensed under the SIL Open Font License 1.1. See [resume/fonts/OFL.txt](resume/fonts/OFL.txt).

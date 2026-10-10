@@ -1,0 +1,27 @@
+{
+  "name": "Riya Sharma",
+  "title": "Full Stack Developer (Fresher)",
+  "contact": { "phone": "+91 98765 43210", "email": "riya.sharma@example.com", "location": "Jaipur, Rajasthan", "linkedin": "linkedin.com/in/riya-sharma", "github": "github.com/riyasharma" },
+  "summary": "Motivated B.Tech Computer Science graduate with hands-on experience in building full-stack web applications through academic and personal projects. Strong foundation in data structures, JavaScript and the MERN stack, looking for an entry-level developer role to learn and contribute.",
+  "education": [
+    { "degree": "B.Tech in Computer Science & Engineering", "institution": "Rajasthan Technical University, Kota", "status": "2021 – 2025", "grade": "CGPA: 8.1 / 10" },
+    { "degree": "Senior Secondary (Class XII), Science", "institution": "Kendriya Vidyalaya, Jaipur", "status": "2021", "grade": "88%" }
+  ],
+  "skills": [
+    { "label": "Languages", "items": ["JavaScript (ES6+)", "Python", "C++", "SQL"] },
+    { "label": "Frontend", "items": ["React.js", "HTML5", "CSS3", "Tailwind CSS"] },
+    { "label": "Backend & Database", "items": ["Node.js", "Express.js", "MongoDB", "MySQL"] },
+    { "label": "Tools", "items": ["Git", "GitHub", "Postman", "VS Code"] }
+  ],
+  "experience": [
+    { "role": "Web Development Intern", "company": "Techlogix Pvt. Ltd.", "location": "Remote", "start": "Jun 2024", "end": "Aug 2024", "duration": "3 months", "internship": true,
+      "bullets": ["Built responsive UI components in React.js and integrated REST APIs for an internal dashboard.", "Fixed 20+ UI bugs and improved page load time by optimising images and lazy-loading routes."] }
+  ],
+  "projects": [
+    { "name": "E-Commerce Store", "description": "Full-stack shopping app with authentication, cart, and order management", "tech": "MERN Stack", "link": "github.com/riyasharma/ecommerce" },
+    { "name": "Task Tracker", "description": "Kanban-style task manager with drag-and-drop and real-time updates using Socket.io" },
+    { "name": "Weather Dashboard", "description": "Weather forecast app consuming a public API with city search and 5-day forecast" }
+  ],
+  "certifications": ["Full Stack Web Development – Coursera (2024)", "Python for Everybody – University of Michigan (2023)"],
+  "achievements": ["Finalist, Smart India Hackathon 2023 (college level)", "Solved 300+ problems on LeetCode and GeeksforGeeks"]
+}
